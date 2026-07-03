@@ -25,7 +25,7 @@ To run the project locally:
 1. Clone the repository.
 
    ```bash
-   git clone [repository-url]
+   git clone git@github.com:Logyle12/BuildingBlocks2.git
    ```
 
 2. Open the project in Unity.
