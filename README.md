@@ -32,6 +32,10 @@ To run the project locally:
 
 3. Press **Play** in the Unity Editor.
 
+## Live Preview
+
+Click here to view the live preview.
+
 ## Usage
 
 - Select a subject and difficulty level.
@@ -78,10 +82,6 @@ Quiz data is loaded from CSV files. Each file should include the following colum
 |
 |-- README.md
 ```
-
-## Live Preview
-
-Click here to view the live preview.
 
 ## License
 
