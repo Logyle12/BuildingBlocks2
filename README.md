@@ -81,7 +81,7 @@ Quiz data is loaded from CSV files. Each file should include the following colum
 
 ## Live Preview
 
-Coming soon.
+Click here to view the live preview.
 
 ## License
 
