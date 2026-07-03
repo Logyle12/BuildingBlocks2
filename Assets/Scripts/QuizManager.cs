@@ -29,12 +29,10 @@ public class QuizManager : MonoBehaviour
 
     public void InitializeQuiz()
     {
-        // 1. Reset state variables
         correctAnswers = 0;
         currentQuestionIndex = 0;
         selectedQuestions.Clear();
 
-        // 2. Load context
         string currentCategory = PlayerPrefs.GetString("CurrentCategoryPlaying", "Unknown");
         int currentStage = PlayerPrefs.GetInt("CurrentStagePlaying", 0);
         levelSaveKey = currentCategory + "_Stage_" + currentStage;
@@ -42,11 +40,9 @@ public class QuizManager : MonoBehaviour
         starsEarned = PlayerPrefs.GetInt(levelSaveKey + "_Stars", 0);
         allQuestions = CSVReader.ReadCSV(quizDataCSV);
 
-        // 3. Prepare questions
-        int originalTotalCount = allQuestions.Count;
         int index = Mathf.Clamp(starsEarned, 0, starMultipliers.Length - 1);
         float multiplier = starMultipliers[index];
-        int targetCount = Mathf.CeilToInt(originalTotalCount * multiplier);
+        int targetCount = Mathf.CeilToInt(allQuestions.Count * multiplier);
 
         List<QuestionData> availableQuestions = allQuestions;
         if (starsEarned < 3)
@@ -57,8 +53,20 @@ public class QuizManager : MonoBehaviour
 
         Shuffle(availableQuestions);
         selectedQuestions = availableQuestions.Take(targetCount).ToList();
-        
-        Debug.Log($"[QuizManager] Quiz Initialized. Stars: {starsEarned}, Questions: {selectedQuestions.Count}");
+
+        // FIX: Shuffle options so the answer isn't always Option A
+        foreach (var q in selectedQuestions)
+        {
+            ShuffleOptions(q);
+        }
+    }
+
+    private void ShuffleOptions(QuestionData q)
+    {
+        string correctAnswerText = q.options[q.correctAnswerIndex];
+        System.Random rng = new System.Random();
+        q.options = q.options.OrderBy(x => rng.Next()).ToArray();
+        q.correctAnswerIndex = Array.IndexOf(q.options, correctAnswerText);
     }
 
     private void Shuffle<T>(List<T> list)
