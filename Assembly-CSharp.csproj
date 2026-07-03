@@ -192,6 +192,7 @@
     <Compile Include="Assets/Scripts/GameContext.cs" />
     <Compile Include="Assets/Scripts/SceneNavigator.cs" />
     <Compile Include="Assets/Scripts/GlobalBackButton.cs" />
+    <Compile Include="Assets/Scripts/ClearSaveData.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets/GUI Kit Casual Game/Extensions/TextMesh Pro/Resources/Shaders/TMPro.cginc" />

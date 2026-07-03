@@ -1,14 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using System;
 
-// 1. The Grading States
-public enum RoundResult
-{
-    Fail,
-    Intermediate,
-    Win
-}
+public enum RoundResult { Fail, Intermediate, Win }
 
 public class QuizManager : MonoBehaviour
 {
@@ -19,76 +14,58 @@ public class QuizManager : MonoBehaviour
     public int starsEarned = 0; 
     private float[] starMultipliers = { 0.25f, 0.3125f, 0.4375f, 1.0f };
 
-    // State Tracking (Public getters, private setters for safety)
-    public int mistakesMade { get; private set; } = 0;
     public int correctAnswers { get; private set; } = 0;
     public int currentQuestionIndex { get; private set; } = 0;
     public int totalQuestionsThisRound { get { return selectedQuestions.Count; } }
 
-    // Question Lists
+    private string levelSaveKey;
     private List<QuestionData> allQuestions;
     private List<QuestionData> selectedQuestions = new List<QuestionData>();
 
     void Start()
     {
-        // --- NEW LOAD LOGIC ---
-        // Load the stars they already have for this specific stage 
-        // so the question count multiplier is correct from the very start.
+        InitializeQuiz();
+    }
+
+    public void InitializeQuiz()
+    {
+        // 1. Reset state variables
+        correctAnswers = 0;
+        currentQuestionIndex = 0;
+        selectedQuestions.Clear();
+
+        // 2. Load context
         string currentCategory = PlayerPrefs.GetString("CurrentCategoryPlaying", "Unknown");
         int currentStage = PlayerPrefs.GetInt("CurrentStagePlaying", 0);
-        string saveKey = currentCategory + "_Stage_" + currentStage + "_Stars";
+        levelSaveKey = currentCategory + "_Stage_" + currentStage;
         
-        starsEarned = PlayerPrefs.GetInt(saveKey, 0);
-        // ----------------------
-
+        starsEarned = PlayerPrefs.GetInt(levelSaveKey + "_Stars", 0);
         allQuestions = CSVReader.ReadCSV(quizDataCSV);
-        SetupNewRound();
-    }
 
-    public void SetupNewRound()
-    {
-        correctAnswers = 0;
-        mistakesMade = 0;
-        currentQuestionIndex = 0;
-        SelectQuestionsByWeight();
-    }
+        // 3. Prepare questions
+        int originalTotalCount = allQuestions.Count;
+        int index = Mathf.Clamp(starsEarned, 0, starMultipliers.Length - 1);
+        float multiplier = starMultipliers[index];
+        int targetCount = Mathf.CeilToInt(originalTotalCount * multiplier);
 
-    private void SelectQuestionsByWeight()
-    {
-        selectedQuestions.Clear();
-        
-        int safeStarIndex = Mathf.Clamp(starsEarned, 0, starMultipliers.Length - 1);
-        float currentMultiplier = starMultipliers[safeStarIndex];
-        int countToAsk = Mathf.RoundToInt(allQuestions.Count * currentMultiplier);
-        
-        List<QuestionData> pool = new List<QuestionData>(allQuestions);
-        
-        for (int i = 0; i < countToAsk; i++)
+        List<QuestionData> availableQuestions = allQuestions;
+        if (starsEarned < 3)
         {
-            float totalWeight = pool.Sum(q => q.weight);
-            float randomValue = Random.Range(0, totalWeight);
-            float runningSum = 0;
-
-            foreach (var q in pool)
-            {
-                runningSum += q.weight;
-                if (randomValue <= runningSum)
-                {
-                    selectedQuestions.Add(q);
-                    pool.Remove(q); 
-                    break;
-                }
-            }
+            List<int> completedIds = GetCompletedIds(levelSaveKey);
+            availableQuestions = allQuestions.Where(q => !completedIds.Contains(q.id)).ToList();
         }
+
+        Shuffle(availableQuestions);
+        selectedQuestions = availableQuestions.Take(targetCount).ToList();
+        
+        Debug.Log($"[QuizManager] Quiz Initialized. Stars: {starsEarned}, Questions: {selectedQuestions.Count}");
     }
 
-    public QuestionData GetCurrentQuestion()
+    private void Shuffle<T>(List<T> list)
     {
-        if (currentQuestionIndex < selectedQuestions.Count)
-        {
-            return selectedQuestions[currentQuestionIndex];
-        }
-        return null; 
+        System.Random rng = new System.Random();
+        int n = list.Count;
+        while (n > 1) { n--; int k = rng.Next(n + 1); T value = list[k]; list[k] = list[n]; list[n] = value; }
     }
 
     public void ProcessAnswer(bool isCorrect)
@@ -96,55 +73,49 @@ public class QuizManager : MonoBehaviour
         if (isCorrect)
         {
             correctAnswers++;
+            QuestionData q = GetCurrentQuestion();
+            if (q != null) SaveCompletedId(levelSaveKey, q.id);
         }
-        else
-        {
-            mistakesMade++;
-            selectedQuestions[currentQuestionIndex].weight *= 0.5f;
-        }
-
         currentQuestionIndex++;
     }
 
-    // THIS IS PUBLIC AND UNCOMMENTED
+    private List<int> GetCompletedIds(string key)
+    {
+        string ids = PlayerPrefs.GetString(key + "_Completed", "");
+        if (string.IsNullOrEmpty(ids)) return new List<int>();
+        return ids.Split(',').Select(int.Parse).ToList();
+    }
+
+    private void SaveCompletedId(string key, int id)
+    {
+        List<int> completed = GetCompletedIds(key);
+        if (!completed.Contains(id))
+        {
+            completed.Add(id);
+            PlayerPrefs.SetString(key + "_Completed", string.Join(",", completed));
+            PlayerPrefs.Save();
+        }
+    }
+
+    public QuestionData GetCurrentQuestion()
+    {
+        return (currentQuestionIndex < selectedQuestions.Count) ? selectedQuestions[currentQuestionIndex] : null;
+    }
+
     public void EvaluateRound()
     {
         float percentageCorrect = (float)correctAnswers / selectedQuestions.Count;
-        RoundResult finalResult;
+        RoundResult finalResult = (percentageCorrect >= 1.0f) ? RoundResult.Win : 
+                                  (percentageCorrect > 0.5f) ? RoundResult.Intermediate : RoundResult.Fail;
 
-        if (percentageCorrect >= 1.0f) 
+        if (finalResult == RoundResult.Win && starsEarned < 3) 
         {
-            finalResult = RoundResult.Win;
-            foreach (var q in allQuestions) q.weight = 1.0f;
-            if (starsEarned < 3) starsEarned++; // They earned a star!
-        }
-        else if (percentageCorrect > 0.5f) 
-        {
-            finalResult = RoundResult.Intermediate;
-        }
-        else 
-        {
-            finalResult = RoundResult.Fail;
+            starsEarned++;
+            PlayerPrefs.SetInt(levelSaveKey + "_Stars", starsEarned);
+            if (starsEarned == 3) PlayerPrefs.DeleteKey(levelSaveKey + "_Completed");
+            PlayerPrefs.Save();
         }
 
-        // --- NEW SAVE LOGIC ---
-        // 1. Get the sticky note of what level we are playing
-        string currentCategory = PlayerPrefs.GetString("CurrentCategoryPlaying", "Unknown");
-        int currentStage = PlayerPrefs.GetInt("CurrentStagePlaying", 0);
-
-        // 2. Build the exact same string your LevelManager looks for
-        string saveKey = currentCategory + "_Stage_" + currentStage + "_Stars";
-
-        // 3. Check if they beat their high score for this level
-        int previousStars = PlayerPrefs.GetInt(saveKey, 0);
-        if (starsEarned > previousStars)
-        {
-            PlayerPrefs.SetInt(saveKey, starsEarned);
-            PlayerPrefs.Save(); // Locks it in!
-        }
-        // -----------------------
-
-        // BRIDGE: This tells the UI Manager to switch to the Win/Fail screen
         FindObjectOfType<QuizUIManager>().ShowEndScreen(finalResult);
     }
 }

@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -8,8 +6,6 @@ using UnityEngine.UI;
 public class LevelBrowser : MonoBehaviour
 {
     private int pageNumber = 0;
-    private bool active = false;
-    private TextMeshProUGUI pageTitle;
     private List<GameObject> levelScenes = new List<GameObject>();
     [SerializeField] private Transform panelTransform;
     [SerializeField] private Button prevButton;
@@ -17,89 +13,60 @@ public class LevelBrowser : MonoBehaviour
 
     void Start()
     {
-        pageTitle = transform.GetComponentInChildren<TextMeshProUGUI>();
+        // Setup buttons
         prevButton.onClick.AddListener(loadPrevScene);
         nextButton.onClick.AddListener(loadNextScene);
 
-        foreach (Transform levelScene in panelTransform) {
-
+        // Populate list
+        foreach (Transform levelScene in panelTransform) 
+        {
             levelScenes.Add(levelScene.gameObject);
             levelScene.gameObject.SetActive(false);
-        
         }
 
-        levelScenes[pageNumber].SetActive(true);
-        active = true;
+        // 1. Load the saved page index
+        pageNumber = PlayerPrefs.GetInt("ActivePage", 0);
+        pageNumber = Mathf.Clamp(pageNumber, 0, levelScenes.Count - 1);
 
+        // 2. Set the view
+        levelScenes[pageNumber].SetActive(true);
+
+        // 3. Update UI
         controlLevelScenes();
     }
 
     public void loadPrevScene()
     {
-        if (pageNumber <= 0 || !active) {
-
-            return;
-
-        } 
+        if (pageNumber <= 0) return;
 
         levelScenes[pageNumber].SetActive(false);
-        levelScenes[pageNumber -= 1].SetActive(true);
+        pageNumber -= 1;
+        levelScenes[pageNumber].SetActive(true);
+        
+        // Save the page
+        PlayerPrefs.SetInt("ActivePage", pageNumber);
         controlLevelScenes();
     }
 
     public void loadNextScene()
     {
-        if (pageNumber >= levelScenes.Count - 1) {
-
-            return;
-        }
-        
+        if (pageNumber >= levelScenes.Count - 1) return;
 
         levelScenes[pageNumber].SetActive(false);
-        levelScenes[pageNumber += 1].SetActive(true);
+        pageNumber += 1;
+        levelScenes[pageNumber].SetActive(true);
+
+        // Save the page
+        PlayerPrefs.SetInt("ActivePage", pageNumber);
         controlLevelScenes();
-
-    }
-
-
-    private void activateArrow() 
-    {
-        int numberOfLevelScenes = levelScenes.Count;
-        prevButton.gameObject.SetActive(pageNumber > 0);
-        nextButton.gameObject.SetActive(pageNumber < numberOfLevelScenes - 1);
-    
-    
     }
 
     private void controlLevelScenes() 
-    {;
-        activateArrow();
-
-        // --- ADD THIS ONE LINE ---
-        // This tells the Level Manager to paint the stars for whatever page we just landed on
-        FindObjectOfType<LevelManager>().LoadCategoryProgress(pageNumber);
-    
-    }
-
-    void Update()
     {
-        int numberOfLevelScenes = levelScenes.Count;
-        if (numberOfLevelScenes <= 0 || active) {
+        prevButton.gameObject.SetActive(pageNumber > 0);
+        nextButton.gameObject.SetActive(pageNumber < levelScenes.Count - 1);
 
-            return;
-
-        }
-
-        if (Input.GetKeyDown(KeyCode.LeftArrow)) {
-
-            loadPrevScene();
-
-        }
-
-        else if (Input.GetKeyDown(KeyCode.RightArrow)) {
-
-            loadNextScene();
-        }
-
+        // Tell LevelManager to refresh the stars for this page
+        FindObjectOfType<LevelManager>().LoadCategoryProgress(pageNumber);
     }
 }

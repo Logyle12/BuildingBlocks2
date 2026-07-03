@@ -18,6 +18,9 @@ public class QuizUIManager : MonoBehaviour
     public GameObject winPanel;
     public GameObject failPanel;
 
+    [Header("Play Again")]
+    public Button playAgainButton; // Assign this in the Inspector
+
     [Header("Progress")]
     public Slider progressBar;
     public TextMeshProUGUI progressText;
@@ -34,12 +37,31 @@ public class QuizUIManager : MonoBehaviour
 
     void Start()
     {
-        // Ensure starting visibility state
+        if (playAgainButton != null)
+            playAgainButton.onClick.AddListener(OnPlayAgainClicked);
+
+        ResetUIState();
+        InitializeButtonListeners();
+        StartCoroutine(InitializeUI());
+    }
+
+    private void ResetUIState()
+    {
         if (gameplayCanvas != null) gameplayCanvas.SetActive(true);
         if (winPanel != null) winPanel.SetActive(false);
         if (failPanel != null) failPanel.SetActive(false);
+    }
 
-        InitializeButtonListeners();
+    public void OnPlayAgainClicked()
+    {
+        // 1. Reset logic and questions in manager
+        quizManager.InitializeQuiz();
+
+        // 2. Reset UI
+        ResetUIState();
+        isProcessingInput = false; 
+
+        // 3. Restart the UI coroutine to show the new first question
         StartCoroutine(InitializeUI());
     }
 
@@ -76,16 +98,14 @@ public class QuizUIManager : MonoBehaviour
 
     IEnumerator ProcessAnswerSequence(int index)
     {
-        isProcessingInput = true; // Lock input to prevent double-clicking
+        isProcessingInput = true; 
         
-        // Trigger Animation
         Button clickedButton = optionButtons[index];
-        if (clickedButton != null && clickedButton.GetComponent<ButtonAnimation>() != null)
-            clickedButton.GetComponent<ButtonAnimation>().buttonClicked();
+        if (clickedButton != null)
+            clickedButton.GetComponent<ButtonAnimation>()?.buttonClicked();
 
         DimNonSelectedButtons(index);
 
-        // Process Logic
         QuestionData currentQuestionData = quizManager.GetCurrentQuestion();
         bool isAnswerCorrect = (index == currentQuestionData.correctAnswerIndex);
         
@@ -93,12 +113,10 @@ public class QuizUIManager : MonoBehaviour
         quizManager.ProcessAnswer(isAnswerCorrect);
         UpdateProgressBar();
 
-        // Wait for user to digest feedback
         yield return new WaitForSeconds(delayBetweenQuestions);
 
         ResetButtonVisuals();
         
-        // Decide whether to show next question or end screen
         if (quizManager.GetCurrentQuestion() != null)
         {
             UpdateQuestionUI();
@@ -106,7 +124,6 @@ public class QuizUIManager : MonoBehaviour
         }
         else
         {
-            // Bridge: Round is finished, tell manager to evaluate
             quizManager.EvaluateRound(); 
         }
     }
@@ -114,36 +131,25 @@ public class QuizUIManager : MonoBehaviour
     public void ShowEndScreen(RoundResult result)
     {
         if (gameplayCanvas != null) gameplayCanvas.SetActive(false);
-
         bool isWin = (result == RoundResult.Win);
-
         if (winPanel != null) winPanel.SetActive(isWin);
         if (failPanel != null) failPanel.SetActive(!isWin);
     }
 
     private void UpdateProgressBar()
     {
-        if (progressBar != null) 
-            progressBar.value = quizManager.correctAnswers;
-
-        if (progressText != null) 
-            progressText.text = $"{quizManager.correctAnswers} / {quizManager.totalQuestionsThisRound}";
+        if (progressBar != null) progressBar.value = quizManager.correctAnswers;
+        if (progressText != null) progressText.text = $"{quizManager.correctAnswers} / {quizManager.totalQuestionsThisRound}";
     }
 
     private void DimNonSelectedButtons(int selectedButtonIndex)
     {
-        float dimAlpha = 0.3f;
-        float opaqueAlpha = 1.0f;
-
         for (int i = 0; i < optionButtons.Length; i++)
         {
             if (optionButtons[i] == null) continue;
-
             Image buttonImage = optionButtons[i].GetComponent<Image>();
             Color targetColor = buttonImage.color;
-            
-            // Fade others, keep clicked one solid
-            targetColor.a = (i == selectedButtonIndex) ? opaqueAlpha : dimAlpha;
+            targetColor.a = (i == selectedButtonIndex) ? 1.0f : 0.3f;
             buttonImage.color = targetColor;
         }
     }
@@ -153,13 +159,9 @@ public class QuizUIManager : MonoBehaviour
         foreach (Button currentButton in optionButtons)
         {
             if (currentButton == null) continue;
-
             Image buttonImage = currentButton.GetComponent<Image>();
-            Color normalColor = buttonImage.color;
-            
-            normalColor.a = 1.0f; // Reset Alpha to full
-            buttonImage.color = normalColor;
-            buttonImage.sprite = defaultSprite; // Reset Sprite
+            buttonImage.color = new Color(1, 1, 1, 1);
+            buttonImage.sprite = defaultSprite;
         }
     }
 

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement; // <-- Added this to read the scene name
 
 public class StageButton : MonoBehaviour
 {
@@ -14,12 +15,15 @@ public class StageButton : MonoBehaviour
 
     public void OnStageClicked()
     {
-        // Write the Context
-        PlayerPrefs.SetString("CurrentCategory", myCategory);
-        PlayerPrefs.SetInt("CurrentStage", myStageIndex);
+        // 1. Save the Quiz Data (e.g., "Spelling", "Grammar")
+        PlayerPrefs.SetString("CurrentCategoryPlaying", myCategory);
+        PlayerPrefs.SetInt("CurrentStagePlaying", myStageIndex);
+        
+        // 2. DYNAMIC RETURN: Memorize the exact scene we are leaving (e.g., "EnglishLevels")
+        PlayerPrefs.SetString("ReturnSceneName", SceneManager.GetActiveScene().name);
         PlayerPrefs.Save();
 
-        // Use the Navigator
+        // 3. Load the Quiz
         SceneNavigator navigator = GameObject.FindWithTag("SceneManager").GetComponent<SceneNavigator>();
         navigator.LoadSceneByName(quizSceneName);
     }

@@ -29,6 +29,7 @@ public static class CSVReader
 
             QuestionData data = new QuestionData
             {
+                id = int.Parse(CleanString(values[0])),
                 questionType = CleanString(values[1]),
                 questionText = CleanString(values[2]),
                 options = new string[] 
