@@ -1,0 +1,4 @@
+repository "BuildingBlocks@local"
+  path "/"
+    br "/main"
+    co "/main"

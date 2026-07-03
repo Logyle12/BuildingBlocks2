@@ -15,7 +15,7 @@ EditorBuildSettings:
     path: Assets/Scenes/English Gameplay/EnglishLevels.unity
     guid: 75f595e7dd66d4049b9f9eefc71026e3
   - enabled: 1
-    path: Assets/Scenes/English Gameplay/Spelling/Level 1/Level1.unity
+    path: Assets/Scenes/English Gameplay/Spelling/Level 1/QuizScene.unity
     guid: de4bbcd25a64740458bc5e76ece59c33
   - enabled: 1
     path: Assets/Scenes/Maths Gameplay/MathLevels.unity
@@ -23,58 +23,4 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Science Gameplay/ScienceLevels.unity
     guid: afa2de2d5fa93484796d56a255b55d19
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
-  - enabled: 0
-    path: 
-    guid: 00000000000000000000000000000000
   m_configObjects: {}

@@ -1,101 +1,123 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro; // Required to read the Screen Label text
 
 public class LevelManager : MonoBehaviour
 {
-    private int pageNumber = 0;
-    private bool active = false;
-    private TextMeshProUGUI pageTitle;
-    private List<GameObject> levelScenes = new List<GameObject>();
-    [SerializeField] private Transform panelTransform;
-    [SerializeField] private Button prevButton;
-    [SerializeField] private Button nextButton;
+    [Header("Category Menus")]
+    [Tooltip("Drag your SpellingMenu, PrefixMenu, etc. directly here in order")]
+    public GameObject[] categoryMenus;
 
     void Start()
     {
-        pageTitle = transform.GetComponentInChildren<TextMeshProUGUI>();
-        prevButton.onClick.AddListener(loadPrevScene);
-        nextButton.onClick.AddListener(loadNextScene);
+        ResetAllStages();
+    }
 
-        foreach (Transform levelScene in panelTransform) {
+    private void ResetAllStages()
+    {
+        foreach (GameObject menuRoot in categoryMenus)
+        {
+            if (menuRoot == null) continue;
 
-            levelScenes.Add(levelScene.gameObject);
-            levelScene.gameObject.SetActive(false);
+            Transform groupStage = menuRoot.transform.Find("Group_Stage");
+            if (groupStage != null)
+            {
+                for (int i = 0; i < groupStage.childCount; i++)
+                {
+                    ResetSingleStage(groupStage.GetChild(i));
+                }
+            }
+        }
+    }
+
+    private void ResetSingleStage(Transform stage)
+    {
+        Transform focusTransform = stage.Find("Focus");
+        if (focusTransform != null) focusTransform.gameObject.SetActive(false);
+
+        Transform starContainer = stage.Find("Star");
+        if (starContainer != null)
+        {
+            for (int i = 0; i < starContainer.childCount; i++)
+            {
+                Image starIcon = starContainer.GetChild(i).GetComponent<Image>();
+                if (starIcon != null) starIcon.color = Color.black;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Grabs the exact category name from the ScreenLabel text in the UI
+    /// </summary>
+    private string GetCategoryName(GameObject menuRoot)
+    {
+        // EXACT match for "ScreenLabel" as you specified
+        Transform label = menuRoot.transform.Find("ScreenLabel");
+
+        if (label != null)
+        {
+            TextMeshProUGUI tmpText = label.GetComponent<TextMeshProUGUI>();
+            if (tmpText != null) 
+            {
+                return tmpText.text;
+            }
+        }
+
+        // Fallback just in case something is named differently
+        Debug.LogWarning($"Could not read ScreenLabel on {menuRoot.name}");
+        return "UnknownCategory";
+    }
+
+    public void LoadCategoryProgress(int categoryIndex)
+    {
+        if (categoryIndex < 0 || categoryIndex >= categoryMenus.Length) return;
+
+        GameObject currentMenu = categoryMenus[categoryIndex];
+        if (currentMenu == null) return;
+
+        // Automatically fetch the name from your UI Text!
+        string categoryName = GetCategoryName(currentMenu);
+        Transform groupStage = currentMenu.transform.Find("Group_Stage");
         
+        if (groupStage != null)
+        {
+            for (int i = 0; i < groupStage.childCount; i++)
+            {
+                Transform stage = groupStage.GetChild(i);
+
+                // Pass the data to the button so it can write the sticky note when clicked
+                StageButton btnScript = stage.GetComponent<StageButton>();
+                if (btnScript != null) btnScript.SetupButtonData(categoryName, i);
+
+                // Create the unique save key (e.g., "Prefix_Stage_0_Stars")
+                string saveKey = categoryName + "_Stage_" + i + "_Stars";
+                
+                int starsEarned = PlayerPrefs.GetInt(saveKey, 0);
+                UpdateStageVisuals(stage, starsEarned);
+            }
         }
-
-        levelScenes[pageNumber].SetActive(true);
-        active = true;
-
-        controlLevelScenes();
     }
 
-    public void loadPrevScene()
+    private void UpdateStageVisuals(Transform stage, int starsEarned)
     {
-        if (pageNumber <= 0 || !active) {
+        Transform starContainer = stage.Find("Star");
+        if (starContainer != null)
+        {
+            for (int i = 0; i < starContainer.childCount; i++)
+            {
+                Image starIcon = starContainer.GetChild(i).GetComponent<Image>();
+                if (starIcon != null)
+                {
+                    starIcon.color = (i < starsEarned) ? Color.white : Color.black;
+                }
+            }
 
-            return;
-
-        } 
-
-        levelScenes[pageNumber].SetActive(false);
-        levelScenes[pageNumber -= 1].SetActive(true);
-        controlLevelScenes();
-    }
-
-    public void loadNextScene()
-    {
-        if (pageNumber >= levelScenes.Count - 1) {
-
-            return;
+            Transform focusTransform = stage.Find("Focus");
+            if (focusTransform != null)
+            {
+                bool hasAllStars = (starsEarned >= starContainer.childCount);
+                focusTransform.gameObject.SetActive(hasAllStars);
+            }
         }
-        
-
-        levelScenes[pageNumber].SetActive(false);
-        levelScenes[pageNumber += 1].SetActive(true);
-        controlLevelScenes();
-
-    }
-
-
-    private void activateArrow() 
-    {
-        int numberOfLevelScenes = levelScenes.Count;
-        prevButton.gameObject.SetActive(pageNumber > 0);
-        nextButton.gameObject.SetActive(pageNumber < numberOfLevelScenes - 1);
-    
-    
-    }
-
-    private void controlLevelScenes() 
-    {;
-        activateArrow();
-    
-    }
-
-    void Update()
-    {
-        int numberOfLevelScenes = levelScenes.Count;
-        if (numberOfLevelScenes <= 0 || active) {
-
-            return;
-
-        }
-
-        if (Input.GetKeyDown(KeyCode.LeftArrow)) {
-
-            loadPrevScene();
-
-        }
-
-        else if (Input.GetKeyDown(KeyCode.RightArrow)) {
-
-            loadNextScene();
-        }
-
     }
 }

@@ -1,65 +1,35 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public enum sceneDirection
 { 
-    LoadNextScene,
+    LoadNextScene, // (You can probably ignore this one now that we use names)
     LoadPreviousScene,
     LoadStartingScene,
     LoadBySceneName
-
-
 }
 
 public class SceneControl : MonoBehaviour
 {
-    private SceneLoader sceneControl;
-
+    private SceneNavigator sceneNavigator; // Renamed
     private string sceneName;
-
-    private QuizManagement buttonQuizManager;
-
     public sceneDirection sceneDirection;
-
     private Button thisButton;
    
-
-
     void Start()
     {
-        sceneControl = GameObject.FindWithTag("SceneManager").GetComponent<SceneLoader>();
+        // Looks for the new SceneNavigator component
+        sceneNavigator = GameObject.FindWithTag("SceneManager").GetComponent<SceneNavigator>();
         thisButton = GetComponent<Button>();
 
-
-        if (sceneDirection == sceneDirection.LoadNextScene)
+        if (sceneDirection == sceneDirection.LoadPreviousScene)
         {
-
-            thisButton.onClick.AddListener(sceneControl.LoadNextScene);
-
+            thisButton.onClick.AddListener(sceneNavigator.LoadPreviousScene);
         }
-
-        else if (sceneDirection == sceneDirection.LoadPreviousScene)
-        {
-
-            thisButton.onClick.AddListener(sceneControl.LoadPreviousScene);
-
-
-        }
-
         else if (sceneDirection == sceneDirection.LoadBySceneName) 
         {
-
             sceneName = thisButton.tag;
-
-            thisButton.onClick.AddListener(delegate {sceneControl.LoadSceneByName(sceneName);});
-            
-        
+            thisButton.onClick.AddListener(delegate {sceneNavigator.LoadSceneByName(sceneName);});
         }
-
     }
-
-
 }
